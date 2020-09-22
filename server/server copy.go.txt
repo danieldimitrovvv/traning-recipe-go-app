@@ -1,0 +1,89 @@
+package main
+
+import (
+	"encoding/json"
+	"net/http"
+)
+
+// Recipe Images data Model
+type Images struct {
+	all  []string
+	main string
+}
+
+// Recipe Ingredient data Model
+type Ingredient struct {
+	name     string
+	quantity string
+}
+
+// Recipe date Model
+type Recipe struct {
+	author      string
+	description string
+	images      []Images
+	ingredients []Ingredient
+}
+
+type recipeHandlers struct {
+	store map[string]Recipe
+}
+
+func (h *recipeHandlers) get(w http.ResponseWriter, r *http.Request) {
+	recipes := make([]Recipe, len(h.store))
+
+	i := 0
+	for _, recipe := range h.store {
+		recipes[i] = recipe
+		i++
+	}
+
+	jsonBytes, err := json.Marshal(recipes)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+	}
+
+	w.Header().Add("content-type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(jsonBytes)
+}
+
+func newRecipe() *recipeHandlers {
+	return &recipeHandlers{
+		store: map[string]Recipe{
+			"id1": Recipe{
+				author:      "1",
+				description: "Recipe 1",
+				images: []Images{
+					Images{
+						all:  []string{"https://firebasestorage.googleapis.com/v0/b/training-recipes-app.appspot.com/o/recipes%2Fbanana_bread%2F91531240_814557239036215_6313265375777652736_n.jpg?alt=media&token=8abd1674-0b26-442b-99dd-021424865db1", "https://firebasestorage.googleapis.com/v0/b/training-recipes-app.appspot.com/o/recipes%2Fbanana_bread%2F91593159_158930561987270_4995466201300729856_n.jpg?alt=media&token=1801ca69-3980-4ccf-84c7-603e92103eaf"},
+						main: "https://firebasestorage.googleapis.com/v0/b/training-recipes-app.appspot.com/o/recipes%2Fbanana_bread%2F91365712_750454092406226_6858959026776965120_n.jpg?alt=media&token=23bb4408-12fb-4c02-a2d4-b5924f1f9dad",
+					},
+				},
+				ingredients: []Ingredient{
+					Ingredient{
+						name:     "banani",
+						quantity: "2 br",
+					},
+					Ingredient{
+						name:     "orizovo brashno",
+						quantity: "190gr",
+					},
+				},
+			},
+		},
+	}
+}
+
+func main() {
+	recipeHandlers := newRecipe()
+
+	http.HandleFunc("/recipes", recipeHandlers.get)
+	err := http.ListenAndServe(":8087", nil)
+
+	if err != nil {
+		panic(err)
+	}
+}
